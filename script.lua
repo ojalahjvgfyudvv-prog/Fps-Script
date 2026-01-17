@@ -1,181 +1,180 @@
--- LocalScript
+--// iOS Ultra FPS Panel
+--// Safe + Aggressive Optimization
+--// LocalScript - StarterPlayerScripts
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
-
+local Lighting = game:GetService("Lighting")
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
-local activeBrainrots = workspace:WaitForChild("ActiveBrainrots")
 
--- ================= SCREEN GUI =================
+--// ScreenGui
 local gui = Instance.new("ScreenGui")
-gui.Name = "BrainrotsUI"
+gui.Name = "iOS_FPS_PANEL"
+gui.IgnoreGuiInset = true
 gui.ResetOnSpawn = false
-gui.Parent = playerGui
+gui.Parent = player:WaitForChild("PlayerGui")
 
--- ================= DRAG FUNCTION =================
-local function makeDraggable(obj)
-	local dragging, dragStart, startPos
-	obj.InputBegan:Connect(function(i)
+--// Background dim
+local dim = Instance.new("Frame")
+dim.Size = UDim2.fromScale(1,1)
+dim.BackgroundColor3 = Color3.new(0,0,0)
+dim.BackgroundTransparency = 0.4
+dim.Parent = gui
+
+--// Main Panel
+local panel = Instance.new("Frame")
+panel.Size = UDim2.fromScale(0.24, 0.56)
+panel.Position = UDim2.fromScale(0.5, 0.5)
+panel.AnchorPoint = Vector2.new(0.5,0.5)
+panel.BackgroundColor3 = Color3.fromRGB(20,20,20)
+panel.Parent = gui
+Instance.new("UICorner", panel).CornerRadius = UDim.new(0,32)
+
+local stroke = Instance.new("UIStroke", panel)
+stroke.Thickness = 1
+stroke.Transparency = 0.8
+
+--// Header (drag only here)
+local header = Instance.new("Frame")
+header.Size = UDim2.fromScale(1,0.13)
+header.BackgroundTransparency = 1
+header.Parent = panel
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.fromScale(1,1)
+title.BackgroundTransparency = 1
+title.Text = "FPS BOOST"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 20
+title.TextColor3 = Color3.new(1,1,1)
+title.Parent = header
+
+--// Close
+local close = Instance.new("TextButton")
+close.Size = UDim2.fromScale(0.12,0.6)
+close.Position = UDim2.fromScale(0.9,0.2)
+close.Text = "✕"
+close.Font = Enum.Font.GothamBold
+close.TextSize = 18
+close.BackgroundColor3 = Color3.fromRGB(40,40,40)
+close.TextColor3 = Color3.new(1,1,1)
+close.Parent = header
+Instance.new("UICorner", close).CornerRadius = UDim.new(1,0)
+
+--// Buttons area
+local body = Instance.new("Frame")
+body.Size = UDim2.fromScale(1,0.82)
+body.Position = UDim2.fromScale(0,0.16)
+body.BackgroundTransparency = 1
+body.Parent = panel
+
+local layout = Instance.new("UIListLayout", body)
+layout.Padding = UDim.new(0,14)
+layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+--// Button creator
+local function button(text)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.fromScale(0.85,0.13)
+	b.Text = text
+	b.Font = Enum.Font.Gotham
+	b.TextSize = 16
+	b.TextColor3 = Color3.new(1,1,1)
+	b.BackgroundColor3 = Color3.fromRGB(28,28,28)
+	b.Parent = body
+	Instance.new("UICorner", b).CornerRadius = UDim.new(0,22)
+
+	b.MouseButton1Down:Connect(function()
+		TweenService:Create(
+			b,
+			TweenInfo.new(0.1),
+			{Size = UDim2.fromScale(0.8,0.12)}
+		):Play()
+	end)
+
+	b.MouseButton1Up:Connect(function()
+		TweenService:Create(
+			b,
+			TweenInfo.new(0.1),
+			{Size = UDim2.fromScale(0.85,0.13)}
+		):Play()
+	end)
+
+	return b
+end
+
+local boost = button("ULTRA FPS BOOST")
+local textures = button("REMOVE HEAVY TEXTURES")
+local lighting = button("LIGHTING LOW")
+
+--// Open animation
+panel.Size = UDim2.fromScale(0,0)
+TweenService:Create(
+	panel,
+	TweenInfo.new(0.5, Enum.EasingStyle.Quint),
+	{Size = UDim2.fromScale(0.24,0.56)}
+):Play()
+
+--// Close destroy
+close.MouseButton1Click:Connect(function()
+	TweenService:Create(panel,TweenInfo.new(0.25),{Size=UDim2.fromScale(0,0)}):Play()
+	task.wait(0.25)
+	gui:Destroy()
+end)
+
+--// Drag header only
+do
+	local drag, start, pos
+	header.InputBegan:Connect(function(i)
 		if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-			dragging = true
-			dragStart = i.Position
-			startPos = obj.Position
+			drag = true
+			start = i.Position
+			pos = panel.Position
 		end
 	end)
 	UIS.InputChanged:Connect(function(i)
-		if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-			local delta = i.Position - dragStart
-			obj.Position = UDim2.new(
-				startPos.X.Scale, startPos.X.Offset + delta.X,
-				startPos.Y.Scale, startPos.Y.Offset + delta.Y
-			)
+		if drag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+			local d = i.Position - start
+			panel.Position = UDim2.new(pos.X.Scale,pos.X.Offset+d.X,pos.Y.Scale,pos.Y.Offset+d.Y)
 		end
 	end)
 	UIS.InputEnded:Connect(function(i)
 		if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-			dragging = false
+			drag = false
 		end
 	end)
 end
 
--- ================= MAIN FRAME =================
-local mainFrame = Instance.new("Frame", gui)
-mainFrame.Size = UDim2.new(0, 500, 0, 300)
-mainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
-mainFrame.BackgroundColor3 = Color3.fromRGB(22,22,22)
-mainFrame.Active = true
-Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0,14)
-makeDraggable(mainFrame)
+--// ULTRA FPS BOOST
+boost.MouseButton1Click:Connect(function()
+	settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+	Lighting.GlobalShadows = false
+	for _,v in ipairs(workspace:GetDescendants()) do
+		if v:IsA("BasePart") then
+			v.CastShadow = false
+			v.Material = Enum.Material.Plastic
+		end
+	end
+end)
 
--- ================= OPEN BUTTON =================
-local openBtn = Instance.new("TextButton", gui)
-openBtn.Size = UDim2.new(0,110,0,34)
-openBtn.Position = UDim2.new(0,20,0.5,-17)
-openBtn.Text = "Open Menu"
-openBtn.TextSize = 14
-openBtn.BackgroundColor3 = Color3.fromRGB(35,35,35)
-openBtn.TextColor3 = Color3.new(1,1,1)
-openBtn.Visible = false
-Instance.new("UICorner", openBtn).CornerRadius = UDim.new(0,12)
-makeDraggable(openBtn)
-
--- ================= CLOSE BUTTON =================
-local closeBtn = Instance.new("TextButton", mainFrame)
-closeBtn.Size = UDim2.new(0,28,0,28)
-closeBtn.Position = UDim2.new(1,-34,0,6)
-closeBtn.Text = "✕"
-closeBtn.TextSize = 14
-closeBtn.BackgroundColor3 = Color3.fromRGB(180,60,60)
-closeBtn.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,8)
-
--- ================= SIDEBAR =================
-local sideBar = Instance.new("ScrollingFrame", mainFrame)
-sideBar.Size = UDim2.new(0,130,1,-12)
-sideBar.Position = UDim2.new(0,6,0,6)
-sideBar.CanvasSize = UDim2.new(0,0,0,0)
-sideBar.ScrollBarImageTransparency = 0.4
-sideBar.BackgroundColor3 = Color3.fromRGB(30,30,30)
-Instance.new("UICorner", sideBar).CornerRadius = UDim.new(0,12)
-
-local sideLayout = Instance.new("UIListLayout", sideBar)
-sideLayout.Padding = UDim.new(0,6)
-
--- ================= CONTENT PANEL =================
-local content = Instance.new("ScrollingFrame", mainFrame)
-content.Size = UDim2.new(0,340,1,-24)
-content.Position = UDim2.new(0,140,0,12)
-content.CanvasSize = UDim2.new(0,0,0,0)
-content.ScrollBarImageTransparency = 0.4
-content.BackgroundColor3 = Color3.fromRGB(26,26,26)
-content.Visible = false
-Instance.new("UICorner", content).CornerRadius = UDim.new(0,12)
-
-local contentLayout = Instance.new("UIListLayout", content)
-contentLayout.Padding = UDim.new(0,6)
-
--- ================= UTIL =================
-local function clearContent()
-	for _,v in ipairs(content:GetChildren()) do
-		if v:IsA("TextButton") then
+--// REMOVE HEAVY TEXTURES
+textures.MouseButton1Click:Connect(function()
+	for _,v in ipairs(workspace:GetDescendants()) do
+		if v:IsA("Decal") or v:IsA("Texture") or v:IsA("SurfaceAppearance") then
 			v:Destroy()
 		end
 	end
-end
-
--- ================= SHOW MODELS =================
-local function showModels(folder)
-	clearContent()
-
-	for _,model in ipairs(folder:GetChildren()) do
-		if model:IsA("Model") then
-			local btn = Instance.new("TextButton", content)
-			btn.Size = UDim2.new(1,-12,0,32)
-			btn.Text = model.Name
-			btn.TextSize = 13
-			btn.BackgroundColor3 = Color3.fromRGB(44,44,44)
-			btn.TextColor3 = Color3.new(1,1,1)
-			Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
-		end
-	end
-
-	task.wait()
-	content.CanvasSize = UDim2.new(0,0,0,contentLayout.AbsoluteContentSize.Y+8)
-
-	content.Visible = true
-	content.Size = UDim2.new(0,0,1,-24)
-
-	TweenService:Create(
-		content,
-		TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
-		{ Size = UDim2.new(0,340,1,-24) }
-	):Play()
-end
-
--- ================= CATEGORY BUTTONS =================
-for _,folder in ipairs(activeBrainrots:GetChildren()) do
-	if folder:IsA("Folder") then
-		local btn = Instance.new("TextButton", sideBar)
-		btn.Size = UDim2.new(1,-10,0,32)
-		btn.Text = folder.Name
-		btn.TextSize = 13
-		btn.BackgroundColor3 = Color3.fromRGB(55,55,55)
-		btn.TextColor3 = Color3.new(1,1,1)
-		Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
-
-		btn.MouseButton1Click:Connect(function()
-			showModels(folder)
-		end)
-	end
-end
-
-task.wait()
-sideBar.CanvasSize = UDim2.new(0,0,0,sideLayout.AbsoluteContentSize.Y+10)
-
--- ================= OPEN / CLOSE ANIMATIONS =================
-local openTween = TweenService:Create(
-	mainFrame,
-	TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-	{ Size = UDim2.new(0,500,0,300) }
-)
-
-local closeTween = TweenService:Create(
-	mainFrame,
-	TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-	{ Size = UDim2.new(0,0,0,0) }
-)
-
-closeBtn.MouseButton1Click:Connect(function()
-	closeTween:Play()
-	closeTween.Completed:Wait()
-	mainFrame.Visible = false
-	openBtn.Visible = true
 end)
 
-openBtn.MouseButton1Click:Connect(function()
-	mainFrame.Visible = true
-	mainFrame.Size = UDim2.new(0,0,0,0)
-	openTween:Play()
-	openBtn.Visible = false
+--// LIGHTING LOW
+lighting.MouseButton1Click:Connect(function()
+	Lighting.Brightness = 1
+	Lighting.EnvironmentDiffuseScale = 0
+	Lighting.EnvironmentSpecularScale = 0
+	for _,v in ipairs(Lighting:GetChildren()) do
+		if v:IsA("PostEffect") then
+			v.Enabled = false
+		end
+	end
 end)
